@@ -1,63 +1,42 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>BIOTEM Pi 테스트</title>
+  <meta charset="UTF-8">
+  <title>Pi SDK CHECK</title>
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-  <style>
-    body { font-family: system-ui, sans-serif; background:#f5f5f5; padding:20px; }
-    .box { max-width:420px; margin:auto; background:#fff; padding:30px; border-radius:12px; }
-    button { width:100%; padding:14px; font-size:16px; margin-top:12px; }
-    #log { margin-top:20px; font-size:14px; }
-  </style>
 </head>
 <body>
-  <div class="box">
-    <h2>BIOTEM Pi 로그인 / 결제 테스트</h2>
+  <h2>Pi SDK 상태 체크</h2>
 
-    <button id="login">Pi 로그인</button>
-    <button id="pay">0.1 Test-Pi 결제</button>
-
-    <div id="log">대기 중...</div>
-  </div>
+  <button onclick="check()">SDK 확인</button>
+  <pre id="out"></pre>
 
   <script>
-    const log = (msg) => document.getElementById("log").innerText = msg;
+    const out = document.getElementById("out");
 
-    // 🔥 핵심: sandbox TRUE
-    Pi.init({ version: "2.0", sandbox: true });
+    function log(msg) {
+      out.textContent += msg + "\n";
+    }
 
-    document.getElementById("login").onclick = async () => {
-      try {
-        log("로그인 요청 중...");
-        const auth = await Pi.authenticate(["username"], () => {});
-        log("로그인 성공: " + auth.user.username);
-      } catch (e) {
-        log("로그인 실패: " + e.message);
+    function check() {
+      if (!window.Pi) {
+        log("❌ Pi 객체 없음 (SDK 로드 실패)");
+        return;
       }
-    };
 
-    document.getElementById("pay").onclick = async () => {
+      log("✅ Pi SDK 로드됨");
+
       try {
-        log("결제 요청 중...");
-        await Pi.createPayment(
-          {
-            amount: 0.1,
-            memo: "BIOTEM Sandbox Test",
-            metadata: { test: true }
-          },
-          {
-            onReadyForServerApproval: (id) => log("승인 대기: " + id),
-            onReadyForServerCompletion: () => log("결제 완료"),
-            onCancel: () => log("결제 취소"),
-            onError: (e) => log("에러: " + e.message)
-          }
-        );
+        Pi.init({ version: "2.0", sandbox: true });
+        log("✅ Pi.init 성공");
+
+        Pi.authenticate(["username"], () => {})
+          .then(res => log("✅ 로그인 성공: " + res.user.username))
+          .catch(err => log("❌ 로그인 실패: " + err.message));
       } catch (e) {
-        log("결제 호출 실패: " + e.message);
+        log("❌ 예외 발생: " + e.message);
       }
-    };
+    }
   </script>
 </body>
 </html>
