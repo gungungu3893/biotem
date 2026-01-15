@@ -1,33 +1,8 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BIOTEM 제품 목록</title>
-    <style>
-        body { font-family: sans-serif; padding: 20px; text-align: center; }
-        .product-card { border: 1px solid #ddd; padding: 15px; margin: 10px; border-radius: 10px; display: inline-block; width: 250px; }
-        .price { color: #e44d26; font-weight: bold; font-size: 1.2em; }
-        .buy-btn { background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
-    </style>
-</head>
-<body>
-    <h1>맞춤형 지주대 제품 목록</h1>
-    
-    <div class="product-card">
-        <h3>Custom Abutment A</h3>
-        <p>Biotem 호환용</p>
-        <p class="price">10 Test-Pi</p>
-        <button class="buy-btn" onclick="alert('결제 기능 구현 예정입니다.')">구매하기</button>
-    </div>
-
-    <div class="product-card">
-        <h3>Custom Abutment B</h3>
-        <p>Osstem 호환용</p>
-        <p class="price">15 Test-Pi</p>
-        <button class="buy-btn" onclick="alert('결제 기능 구현 예정입니다.')">구매하기</button>
-    </div>
-
-    <p><a href="index.html">홈으로 돌아가기</a></p>
-</body>
-</html>
+{
+  "name": "biotem",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "npx serve ."
+  }
+}
