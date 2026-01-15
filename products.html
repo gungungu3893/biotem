@@ -8,52 +8,67 @@
     <style>
         body { font-family: sans-serif; text-align: center; padding: 20px; background-color: #f4f4f4; }
         .product-card { background: white; border-radius: 15px; padding: 20px; max-width: 320px; margin: 20px auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .buy-btn { background-color: #ffd700; border: none; padding: 15px 30px; font-weight: bold; border-radius: 10px; cursor: pointer; width: 100%; }
-        #status-msg { margin-top: 15px; font-size: 0.9em; color: #666; }
+        .buy-btn { background-color: #ffd700; border: none; padding: 15px 30px; font-weight: bold; border-radius: 10px; cursor: pointer; width: 100%; font-size: 1.1em; }
+        #status-msg { margin-top: 15px; font-size: 0.9em; color: #666; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="product-card">
         <h2>BIOTEM 테스트 결제</h2>
         <p>임플란트 지주대 샘플</p>
-        <p style="color:red; font-weight:bold;">0.1 Test-Pi</p>
+        <p style="color:#e44d26; font-size: 1.5em; font-weight:bold;">0.1 Test-Pi</p>
         <button id="pay-button" class="buy-btn">결제하기</button>
-        <div id="status-msg">지갑 연결 확인 중...</div>
+        <div id="status-msg">지갑 연결 대기 중...</div>
     </div>
 
     <script>
-        // 초기화 시 sandbox 설정 확인 (현재는 false가 맞습니다)
-        Pi.init({ version: "2.0", sandbox: false });
+        // 초기화 시점을 명확히 합니다.
+        try {
+            Pi.init({ version: "2.0", sandbox: false });
+            document.getElementById('status-msg').innerText = "결제 준비 완료";
+        } catch (e) {
+            document.getElementById('status-msg').innerText = "SDK 초기화 실패";
+        }
 
-        const statusMsg = document.getElementById('status-msg');
-        
         document.getElementById('pay-button').onclick = async () => {
-            statusMsg.innerText = "결제창을 요청합니다...";
+            const statusMsg = document.getElementById('status-msg');
+            statusMsg.innerText = "결제창을 불러오고 있습니다...";
 
             try {
-                const payment = await Pi.createPayment({
+                // 결제 데이터 생성
+                const paymentData = {
                     amount: 0.1,
-                    memo: "10번 단계 완료를 위한 테스트 결제",
-                    metadata: { item_id: "test_001" },
-                }, {
+                    memo: "10번 단계 완료 테스트 결제",
+                    metadata: { item: "sample_abutment" }
+                };
+
+                // 결제 콜백 설정
+                const callbacks = {
                     onReadyForServerApproval: function(paymentId) {
-                        statusMsg.innerText = "지갑 승인 대기 중 (ID: " + paymentId + ")";
+                        statusMsg.innerText = "결제 승인 대기 중 (ID: " + paymentId + ")";
+                        statusMsg.style.color = "blue";
                     },
                     onReadyForServerCompletion: function(paymentId, txid) {
-                        statusMsg.innerText = "결제 성공! 10번 단계가 완료되었습니다.";
+                        statusMsg.innerText = "결제 성공! 10번 단계 완료!";
+                        statusMsg.style.color = "green";
                     },
                     onCancel: function(paymentId) {
-                        statusMsg.innerText = "결제를 취소하셨습니다.";
+                        statusMsg.innerText = "사용자가 결제를 취소했습니다.";
+                        statusMsg.style.color = "orange";
                     },
                     onError: function(error, payment) {
                         statusMsg.innerText = "에러: " + error.message;
-                        console.error("Payment Error:", error);
+                        statusMsg.style.color = "red";
                     }
-                });
+                };
+
+                // 결제 실행
+                await Pi.createPayment(paymentData, callbacks);
+
             } catch (err) {
-                // 이 부분이 실행되면 SDK가 주소를 승인하지 않은 것입니다.
-                statusMsg.innerText = "SDK 오류: 주소 설정을 확인하세요.";
-                alert("결제 요청 실패: Pi Browser 주소창의 주소와 포털의 App URL이 완전히 같은지 확인하세요.");
+                console.error("Payment Error:", err);
+                statusMsg.innerText = "연결 오류: 주소창 새로고침 후 시도하세요.";
+                alert("결제창을 띄우지 못했습니다. \nPi Browser 주소창 우측의 '새로고침' 아이콘을 눌러주세요.");
             }
         };
     </script>
