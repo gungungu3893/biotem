@@ -3,72 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BIOTEM 결제 테스트</title>
+    <title>BIOTEM 결제 센터</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 20px; background-color: #f4f4f4; }
-        .product-card { background: white; border-radius: 15px; padding: 20px; max-width: 320px; margin: 20px auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .buy-btn { background-color: #ffd700; border: none; padding: 15px 30px; font-weight: bold; border-radius: 10px; cursor: pointer; width: 100%; font-size: 1.1em; }
-        #status-msg { margin-top: 15px; font-size: 0.9em; color: #666; font-weight: bold; }
+        body { font-family: 'Malgun Gothic', sans-serif; text-align: center; padding: 20px; background-color: #f8f9fa; color: #333; }
+        .product-card { background: white; border-radius: 20px; padding: 30px; max-width: 350px; margin: 40px auto; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .price { color: #e44d26; font-size: 2.2em; font-weight: bold; margin: 20px 0; }
+        .pay-button { background-color: #ffd700; color: #000; border: none; padding: 18px; font-size: 1.2em; font-weight: bold; border-radius: 12px; cursor: pointer; width: 100%; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        #status-display { margin-top: 20px; font-size: 0.95em; color: #666; font-weight: bold; min-height: 1.5em; }
     </style>
 </head>
 <body>
     <div class="product-card">
-        <h2>BIOTEM 테스트 결제</h2>
-        <p>임플란트 지주대 샘플</p>
-        <p style="color:#e44d26; font-size: 1.5em; font-weight:bold;">0.1 Test-Pi</p>
-        <button id="pay-button" class="buy-btn">결제하기</button>
-        <div id="status-msg">지갑 연결 대기 중...</div>
+        <h2 style="margin-top:0;">BIOTEM 정밀 가공</h2>
+        <p>맞춤형 임플란트 지주대 샘플</p>
+        <div class="price">0.1 Test-Pi</div>
+        <button id="main-pay-btn" class="pay-button">지갑 결제 승인하기</button>
+        <div id="status-display">시스템 연결 확인 중...</div>
     </div>
 
     <script>
-        // 초기화 시점을 명확히 합니다.
+        // 초기화: sandbox는 반드시 false여야 10번 단계가 통과됩니다.
         try {
             Pi.init({ version: "2.0", sandbox: false });
-            document.getElementById('status-msg').innerText = "결제 준비 완료";
-        } catch (e) {
-            document.getElementById('status-msg').innerText = "SDK 초기화 실패";
+            document.getElementById('status-display').innerText = "지갑 연결 준비 완료";
+        } catch (err) {
+            document.getElementById('status-display').innerText = "SDK 초기화 오류";
         }
 
-        document.getElementById('pay-button').onclick = async () => {
-            const statusMsg = document.getElementById('status-msg');
-            statusMsg.innerText = "결제창을 불러오고 있습니다...";
+        document.getElementById('main-pay-btn').onclick = async () => {
+            const status = document.getElementById('status-display');
+            status.innerText = "Pi 지갑 결제창을 호출합니다...";
 
             try {
-                // 결제 데이터 생성
-                const paymentData = {
+                await Pi.createPayment({
                     amount: 0.1,
-                    memo: "10번 단계 완료 테스트 결제",
-                    metadata: { item: "sample_abutment" }
-                };
-
-                // 결제 콜백 설정
-                const callbacks = {
+                    memo: "BIOTEM 10단계 최종 테스트 결제",
+                    metadata: { item_id: "final_test_abutment" },
+                }, {
                     onReadyForServerApproval: function(paymentId) {
-                        statusMsg.innerText = "결제 승인 대기 중 (ID: " + paymentId + ")";
-                        statusMsg.style.color = "blue";
+                        status.innerText = "결제 생성 성공! 승인 대기 중...";
+                        status.style.color = "blue";
+                        // 이 콜백이 실행되면 실제 지갑 창이 이미 뜬 상태입니다.
                     },
                     onReadyForServerCompletion: function(paymentId, txid) {
-                        statusMsg.innerText = "결제 성공! 10번 단계 완료!";
-                        statusMsg.style.color = "green";
+                        status.innerText = "결제가 완료되었습니다! 10번 성공!";
+                        status.style.color = "green";
                     },
                     onCancel: function(paymentId) {
-                        statusMsg.innerText = "사용자가 결제를 취소했습니다.";
-                        statusMsg.style.color = "orange";
+                        status.innerText = "사용자가 결제를 취소했습니다.";
+                        status.style.color = "orange";
                     },
                     onError: function(error, payment) {
-                        statusMsg.innerText = "에러: " + error.message;
-                        statusMsg.style.color = "red";
+                        status.innerText = "오류: " + error.message;
+                        status.style.color = "red";
                     }
-                };
-
-                // 결제 실행
-                await Pi.createPayment(paymentData, callbacks);
-
+                });
             } catch (err) {
-                console.error("Payment Error:", err);
-                statusMsg.innerText = "연결 오류: 주소창 새로고침 후 시도하세요.";
-                alert("결제창을 띄우지 못했습니다. \nPi Browser 주소창 우측의 '새로고침' 아이콘을 눌러주세요.");
+                console.error(err);
+                status.innerText = "연결 실패: 주소 및 설정을 재점검하세요.";
+                alert("결제창을 띄우지 못했습니다. \n\n1. 개발자 포털의 URL과 현재 주소가 '완벽히' 같은지 확인 \n2. Pi 브라우저 주소창 우측의 '새로고침' 아이콘 클릭");
             }
         };
     </script>
