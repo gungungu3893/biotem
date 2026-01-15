@@ -1,122 +1,49 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <title>BIOTEM</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- Pi SDK (Pi Browser 전용) -->
-  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-
-  <style>
-    body {
-      font-family: Arial, Helvetica, sans-serif;
-      padding: 40px;
-      background: #ffffff;
-    }
-
-    h1 {
-      font-size: 32px;
-      margin-bottom: 8px;
-    }
-
-    p {
-      margin-top: 0;
-      margin-bottom: 20px;
-      color: #555;
-    }
-
-    button {
-      padding: 14px 20px;
-      font-size: 16px;
-      margin-right: 10px;
-      cursor: pointer;
-    }
-
-    #log {
-      margin-top: 30px;
-      padding: 12px;
-      border: 1px solid #ccc;
-      background: #f9f9f9;
-      white-space: pre-wrap;
-      font-size: 14px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIOTEM Pi 지갑 연동 테스트</title>
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 </head>
 <body>
+    <h1>BIOTEM 임플란트 서비스 (Sandbox 모드)</h1>
+    <p>Pi 지갑을 연결하여 본인 인증을 진행하세요.</p>
+    
+    <button id="auth-btn" style="padding: 15px 30px; font-size: 18px; cursor: pointer; background-color: #ffd700; border: none; border-radius: 5px;">
+        Pi 지갑 연결하기
+    </button>
 
-  <h1>BIOTEM</h1>
-  <p>Official implant product website</p>
+    <div id="user-info" style="margin-top: 20px; font-weight: bold; color: blue;"></div>
 
-  <button onclick="piLogin()">Pi 로그인</button>
-  <button onclick="testPay()">테스트 결제 (0.01 Pi)</button>
+    <script>
+        // 1. Pi SDK 초기화 (PC 테스트를 위해 sandbox: true 추가)
+        Pi.init({ version: "2.0", sandbox: true });
 
-  <div id="log">초기화 중...</div>
+        const btn = document.getElementById('auth-btn');
+        const display = document.getElementById('user-info');
 
-  <script>
-    const logBox = document.getElementById("log");
+        btn.onclick = async () => {
+            try {
+                // 2. 사용자 인증 요청
+                const scopes = ['username', 'payments'];
 
-    function log(msg) {
-      logBox.innerText += "\n" + msg;
-    }
+                // 미완료 결제 확인 함수
+                function onIncompletePaymentFound(payment) {
+                    console.log("미완료 결제 발견:", payment);
+                };
 
-    // Pi SDK 로드 확인
-    if (typeof Pi === "undefined") {
-      logBox.innerText =
-        "❌ Pi SDK가 로드되지 않았습니다.\n" +
-        "👉 Pi Browser가 아닌 일반 브라우저입니다.";
-    } else {
-      logBox.innerText = "✅ Pi SDK 로드됨 (Pi Browser)";
-    }
+                const auth = await Pi.authenticate(scopes, onIncompletePaymentFound);
+                
+                // 3. 성공 시 화면 표시
+                display.innerText = `연결 성공! 환영합니다, ${auth.user.username}님.`;
+                console.log("인증 정보:", auth);
 
-    // Pi 초기화 (Testnet)
-    Pi.init({
-      version: "2.0",
-      sandbox: true
-    });
-
-    // 로그인
-    async function piLogin() {
-      log("▶ Pi 로그인 시도 중...");
-
-      try {
-        const auth = await Pi.authenticate(
-          ["username", "payments"],
-          function (payment) {
-            log("결제 승인 콜백: " + JSON.stringify(payment));
-          }
-        );
-
-        log("✅ 로그인 성공");
-        log("username: " + auth.user.username);
-        log("uid: " + auth.user.uid);
-
-      } catch (err) {
-        log("❌ 로그인 실패");
-        log(JSON.stringify(err));
-      }
-    }
-
-    // 테스트 결제
-    async function testPay() {
-      log("▶ 테스트 결제 시작");
-
-      try {
-        const payment = await Pi.createPayment({
-          amount: 0.01,
-          memo: "BIOTEM test payment",
-          metadata: { product: "test" }
-        });
-
-        log("✅ 결제 생성됨");
-        log(JSON.stringify(payment));
-
-      } catch (err) {
-        log("❌ 결제 실패");
-        log(JSON.stringify(err));
-      }
-    }
-  </script>
-
+            } catch (error) {
+                console.error("인증 실패:", error);
+                display.innerText = "연동 실패. Sandbox 설정을 확인하세요.";
+            }
+        };
+    </script>
 </body>
 </html>
