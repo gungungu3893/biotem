@@ -1,60 +1,63 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BIOTEM 공식 임플란트 서비스</title>
-    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-    <style>
-        body { font-family: 'Malgun Gothic', sans-serif; text-align: center; padding: 20px; line-height: 1.6; background-color: #f9f9f9; }
-        .container { max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h1 { color: #333; }
-        .btn { padding: 15px 30px; font-size: 18px; cursor: pointer; background-color: #ffd700; border: none; border-radius: 8px; font-weight: bold; margin: 10px; width: 100%; transition: 0.3s; }
-        .btn:hover { background-color: #ffcc00; }
-        .info { margin-top: 20px; font-weight: bold; color: #555; min-height: 24px; }
-        .nav-btn { background-color: #eee; color: #333; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BIOTEM Pi 테스트</title>
+  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+  <style>
+    body { font-family: system-ui, sans-serif; background:#f5f5f5; padding:20px; }
+    .box { max-width:420px; margin:auto; background:#fff; padding:30px; border-radius:12px; }
+    button { width:100%; padding:14px; font-size:16px; margin-top:12px; }
+    #log { margin-top:20px; font-size:14px; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>BIOTEM 임플란트</h1>
-        <p>Citizen Cincom CNC 장비로 정밀 제작하는<br><strong>맞춤형 지주대(Abutment)</strong> 서비스입니다.</p>
-        
-        <button id="auth-btn" class="btn">Pi 지갑 연결하기</button>
-        <div id="user-info" class="info"></div>
+  <div class="box">
+    <h2>BIOTEM Pi 로그인 / 결제 테스트</h2>
 
-        <hr style="margin: 30px 0; border: 0; border-top: 1px solid #eee;">
+    <button id="login">Pi 로그인</button>
+    <button id="pay">0.1 Test-Pi 결제</button>
 
-        <a href="products.html" style="text-decoration: none;">
-            <button class="btn nav-btn">제품 목록 및 결제 테스트</button>
-        </a>
-    </div>
+    <div id="log">대기 중...</div>
+  </div>
 
-    <script>
-        // 실제 서비스 환경을 위해 sandbox를 false로 변경합니다. 
-        Pi.init({ version: "2.0", sandbox: false });
+  <script>
+    const log = (msg) => document.getElementById("log").innerText = msg;
 
-        const btn = document.getElementById('auth-btn');
-        const display = document.getElementById('user-info');
+    // 🔥 핵심: sandbox TRUE
+    Pi.init({ version: "2.0", sandbox: true });
 
-        btn.onclick = async () => {
-            try {
-                const scopes = ['username', 'payments'];
-                
-                function onIncompletePaymentFound(payment) {
-                    console.log("미완료 결제 발견:", payment);
-                    // 여기에 나중에 결제 승인 로직을 추가할 예정입니다. 
-                };
+    document.getElementById("login").onclick = async () => {
+      try {
+        log("로그인 요청 중...");
+        const auth = await Pi.authenticate(["username"], () => {});
+        log("로그인 성공: " + auth.user.username);
+      } catch (e) {
+        log("로그인 실패: " + e.message);
+      }
+    };
 
-                const auth = await Pi.authenticate(scopes, onIncompletePaymentFound);
-                display.innerText = `${auth.user.username}님, 연결되었습니다.`;
-                display.style.color = "green";
-            } catch (error) {
-                console.error("인증 실패:", error);
-                display.innerText = "Pi Browser에서 접속해 주세요.";
-                display.style.color = "red";
-            }
-        };
-    </script>
+    document.getElementById("pay").onclick = async () => {
+      try {
+        log("결제 요청 중...");
+        await Pi.createPayment(
+          {
+            amount: 0.1,
+            memo: "BIOTEM Sandbox Test",
+            metadata: { test: true }
+          },
+          {
+            onReadyForServerApproval: (id) => log("승인 대기: " + id),
+            onReadyForServerCompletion: () => log("결제 완료"),
+            onCancel: () => log("결제 취소"),
+            onError: (e) => log("에러: " + e.message)
+          }
+        );
+      } catch (e) {
+        log("결제 호출 실패: " + e.message);
+      }
+    };
+  </script>
 </body>
 </html>
