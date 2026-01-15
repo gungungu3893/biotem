@@ -2,62 +2,55 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>BIOTEM · 결제 테스트</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BIOTEM 결제</title>
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 </head>
-<body style="font-family:sans-serif;text-align:center;padding:40px">
-
-  <h2>BIOTEM 테스트 결제</h2>
-  <p>임플란트 지주대 샘플</p>
-  <p style="font-weight:bold;color:#c0392b">0.1 Test-Pi</p>
-
-  <button id="payBtn" style="padding:15px 30px;font-size:18px">
-    결제하기
-  </button>
-
-  <p id="status" style="margin-top:20px"></p>
+<body>
+  <h1>BIOTEM 테스트 결제</h1>
+  <p>0.1 Pi</p>
+  <button id="pay">결제하기</button>
+  <div id="status"></div>
 
   <script>
-    const status = document.getElementById("status");
-    const btn = document.getElementById("payBtn");
+    Pi.init({ version: "2.0", sandbox: false });
 
-    if (!window.Pi) {
-      status.innerText = "❌ Pi Browser에서만 결제 가능";
-      btn.disabled = true;
-    } else {
-      Pi.init({ version: "2.0", sandbox: true });
-    }
+    const SERVER = "https://너의-render-서버.onrender.com";
 
-    btn.onclick = async () => {
-      status.innerText = "결제창 여는 중...";
+    document.getElementById("pay").onclick = async () => {
+      document.getElementById("status").innerText = "결제 요청 중...";
 
-      try {
-        await Pi.createPayment(
-          {
-            amount: 0.1,
-            memo: "BIOTEM 테스트 결제",
-            metadata: { product: "abutment_sample" }
+      Pi.createPayment(
+        {
+          amount: 0.1,
+          memo: "BIOTEM 테스트 결제",
+          metadata: { product: "abutment" },
+        },
+        {
+          onReadyForServerApproval: async (paymentId) => {
+            await fetch(`${SERVER}/approve`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ paymentId }),
+            });
           },
-          {
-            onReadyForServerApproval: (paymentId) => {
-              status.innerText = "지갑 승인 대기중 (" + paymentId + ")";
-            },
-            onReadyForServerCompletion: (paymentId, txid) => {
-              status.innerText = "✅ 결제 성공";
-            },
-            onCancel: () => {
-              status.innerText = "❌ 결제 취소";
-            },
-            onError: (err) => {
-              status.innerText = "❌ 에러: " + err.message;
-            }
-          }
-        );
-      } catch (e) {
-        status.innerText = "❌ 결제창 호출 실패";
-        console.error(e);
-      }
+          onReadyForServerCompletion: async (paymentId, txid) => {
+            await fetch(`${SERVER}/complete`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ paymentId, txid }),
+            });
+            document.getElementById("status").innerText = "결제 완료";
+          },
+          onCancel: () => {
+            document.getElementById("status").innerText = "취소됨";
+          },
+          onError: (e) => {
+            document.getElementById("status").innerText = "에러 발생";
+            console.error(e);
+          },
+        }
+      );
     };
   </script>
 </body>
