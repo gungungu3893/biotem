@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BIOTEM 제품 결제 테스트</title>
+    <title>BIOTEM 테스트 결제</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <style>
         body { font-family: 'Malgun Gothic', sans-serif; padding: 20px; text-align: center; background-color: #f4f4f4; }
@@ -21,47 +21,51 @@
         <h3>테스트용 지주대</h3>
         <p>Citizen Cincom 가공 샘플</p>
         <p class="price">0.1 Test-Pi</p>
-        <button class="buy-btn" onclick="transferPi()">결제하기</button>
-        <div id="status-msg" class="status">버튼을 눌러 결제를 시작하세요.</div>
+        <button id="pay-button" class="buy-btn">결제하기</button>
+        <div id="status-msg" class="status">준비 중...</div>
     </div>
 
     <p><a href="index.html" style="color: #999; text-decoration: none;">홈으로 돌아가기</a></p>
 
     <script>
-        // 10번 단계(실제 결제창 띄우기)를 위해 sandbox를 반드시 false로 설정합니다.
+        // 1. SDK 초기화 (반드시 sandbox: false로 설정)
         Pi.init({ version: "2.0", sandbox: false });
 
-        async function transferPi() {
-            const statusMsg = document.getElementById('status-msg');
-            statusMsg.innerText = "결제창을 불러오는 중...";
+        const statusMsg = document.getElementById('status-msg');
+        const payButton = document.getElementById('pay-button');
+
+        // 앱이 로드되면 바로 상태 표시
+        statusMsg.innerText = "연결 확인 중...";
+
+        payButton.onclick = async () => {
+            statusMsg.innerText = "결제창을 요청 중입니다...";
 
             try {
                 const payment = await Pi.createPayment({
                     amount: 0.1,
-                    memo: "10번 단계 완료를 위한 테스트 결제",
-                    metadata: { productId: "test_product_001" },
+                    memo: "10번 단계 완료 테스트",
+                    metadata: { productId: "test_001" },
                 }, {
                     onReadyForServerApproval: function(paymentId) {
-                        statusMsg.innerText = "결제가 생성되었습니다. 서버 승인 대기 중...";
-                        console.log("Payment ID:", paymentId);
-                        // 초보 단계에서는 창이 떠서 지갑 비번 입력 단계까지만 가도 성공입니다.
+                        statusMsg.innerText = "결제가 생성되었습니다! ID: " + paymentId;
+                        console.log("Approve this payment on your server:", paymentId);
                     },
                     onReadyForServerCompletion: function(paymentId, txid) {
                         statusMsg.innerText = "결제 완료 처리 중...";
                     },
                     onCancel: function(paymentId) {
-                        statusMsg.innerText = "결제가 취소되었습니다.";
+                        statusMsg.innerText = "사용자가 결제를 취소했습니다.";
                     },
                     onError: function(error, payment) {
-                        statusMsg.innerText = "에러: " + error.message;
-                        console.error(error);
+                        statusMsg.innerText = "에러 발생: " + error.message;
                     }
                 });
             } catch (err) {
-                statusMsg.innerText = "결제 오류: Pi Browser 환경을 확인하세요.";
-                alert("결제를 시작할 수 없습니다. \n1. Pi Browser 주소창에 직접 주소를 쳤는지 확인 \n2. 포털 설정 주소와 현재 주소가 같은지 확인");
+                console.error(err);
+                alert("결제 오류가 발생했습니다.\n주소창의 주소가 개발자 포털에 등록된 'Production URL'과 완전히 일치하는지 확인하세요.");
+                statusMsg.innerText = "결제를 시작할 수 없습니다.";
             }
-        }
+        };
     </script>
 </body>
 </html>
