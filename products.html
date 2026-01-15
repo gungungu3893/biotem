@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIOTEM 제품 목록</title>
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; padding: 20px; text-align: center; background-color: #f4f4f4; }
+        .product-card { background: white; border: 1px solid #ddd; padding: 20px; margin: 15px; border-radius: 15px; display: inline-block; width: 280px; shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .price { color: #e44d26; font-weight: bold; font-size: 1.4em; margin: 10px 0; }
+        .buy-btn { background-color: #ffd700; color: #333; padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1em; width: 100%; }
+        .buy-btn:hover { background-color: #ffcc00; }
+    </style>
+</head>
+<body>
+    <h1>맞춤형 지주대 제품 목록</h1>
+    <p>테스트 결제를 진행하여 10번 단계를 완료하세요.</p>
+    
+    <div class="product-card">
+        <h3>Custom Abutment A</h3>
+        <p>Biotem 호환용 (정밀가공)</p>
+        <p class="price">1 Test-Pi</p>
+        <button class="buy-btn" onclick="transferPi(1, 'Custom Abutment A')">구매하기 (1 Pi)</button>
+    </div>
+
+    <p style="margin-top: 30px;"><a href="index.html" style="color: #666;">홈으로 돌아가기</a></p>
+
+    <script>
+        // 초기화 (9번 단계를 마쳤으므로 sandbox는 false로 설정합니다)
+        Pi.init({ version: "2.0", sandbox: false });
+
+        async function transferPi(amount, productName) {
+            try {
+                const payment = await Pi.createPayment({
+                    amount: amount,
+                    memo: productName + " 구매 테스트",
+                    metadata: { productId: "abutment_001" },
+                }, {
+                    onReadyForServerApproval: function(paymentId) {
+                        console.log("서버 승인 대기 중... ID:", paymentId);
+                        // 초보 단계에서는 여기까지만 창이 떠도 성공입니다!
+                    },
+                    onReadyForServerCompletion: function(paymentId, txid) {
+                        console.log("결제 완료 대기 중...");
+                    },
+                    onCancel: function(paymentId) { console.log("결제 취소"); },
+                    onError: function(error, payment) { console.error("에러 발생", error); }
+                });
+            } catch (err) {
+                alert("결제를 시작할 수 없습니다. Pi Browser인지 확인하세요.");
+            }
+        }
+    </script>
+</body>
+</html>
