@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>BIOTEM</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Pi SDK -->
+  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+  <script>
+    Pi.init({ version: "2.0", sandbox: true });
+  </script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 40px;
+    }
+    button {
+      padding: 12px 20px;
+      font-size: 16px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+    #status {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>BIOTEM</h1>
+  <p>Official implant product website</p>
+
+  <button onclick="piLogin()">Pi 로그인</button>
+  <br /><br />
+  <button onclick="testPayment()">테스트 결제 (0.01 Pi)</button>
+
+  <div id="status"></div>
+
+  <script>
+    async function piLogin() {
+      document.getElementById("status").innerText = "로그인 요청 중...";
+      try {
+        const user = await Pi.authenticate(
+          ["username", "payments"],
+          function () {}
+        );
+        document.getElementById("status").innerText =
+          "로그인 성공: " + user.username;
+      } catch (err) {
+        document.getElementById("status").innerText =
+          "로그인 실패: " + err;
+      }
+    }
+
+    async function testPayment() {
+      try {
+        const payment = await Pi.createPayment({
+          amount: 0.01,
+          memo: "BIOTEM test payment",
+          metadata: { product: "implant-test" }
+        });
+        document.getElementById("status").innerText =
+          "결제 요청 완료 (승인 대기)";
+      } catch (err) {
+        document.getElementById("status").innerText =
+          "결제 실패: " + err;
+      }
+    }
+  </script>
+
+</body>
+</html>
