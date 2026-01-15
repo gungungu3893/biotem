@@ -1,55 +1,64 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BIOTEM 결제 테스트</title>
-    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-    <style>
-        body { font-family: sans-serif; text-align: center; padding: 20px; background-color: #f4f4f4; }
-        .product-card { background: white; border-radius: 15px; padding: 20px; max-width: 320px; margin: 20px auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .buy-btn { background-color: #ffd700; border: none; padding: 15px 30px; font-weight: bold; border-radius: 10px; cursor: pointer; width: 100%; }
-        #status-msg { margin-top: 15px; font-size: 0.9em; color: #666; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BIOTEM · 결제 테스트</title>
+  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 </head>
-<body>
-    <div class="product-card">
-        <h2>BIOTEM 테스트 결제</h2>
-        <p>임플란트 지주대 샘플</p>
-        <p style="color:#e44d26; font-weight:bold;">0.1 Test-Pi</p>
-        <button id="pay-button" class="buy-btn">결제하기</button>
-        <div id="status-msg">준비 완료</div>
-    </div>
+<body style="font-family:sans-serif;text-align:center;padding:40px">
 
-    <script>
-        // 1. 초기화 (반드시 sandbox: false)
-        Pi.init({ version: "2.0", sandbox: false });
+  <h2>BIOTEM 테스트 결제</h2>
+  <p>임플란트 지주대 샘플</p>
+  <p style="font-weight:bold;color:#c0392b">0.1 Test-Pi</p>
 
-        document.getElementById('pay-button').onclick = async () => {
-            const statusMsg = document.getElementById('status-msg');
-            statusMsg.innerText = "결제창 호출 중...";
+  <button id="payBtn" style="padding:15px 30px;font-size:18px">
+    결제하기
+  </button>
 
-            try {
-                // 2. 결제 요청
-                await Pi.createPayment({
-                    amount: 0.1,
-                    memo: "10번 단계 완료 테스트",
-                    metadata: { item: "sample" },
-                }, {
-                    onReadyForServerApproval: (paymentId) => {
-                        statusMsg.innerText = "지갑 승인 대기 중 (ID: " + paymentId + ")";
-                    },
-                    onReadyForServerCompletion: (paymentId, txid) => {
-                        statusMsg.innerText = "결제 성공!";
-                    },
-                    onCancel: (paymentId) => { statusMsg.innerText = "취소됨"; },
-                    onError: (error) => { statusMsg.innerText = "에러: " + error.message; }
-                });
-            } catch (err) {
-                // 느낌표가 떠 있으면 이 오류가 발생합니다.
-                alert("보안 경고(느낌표)로 인해 지갑을 열 수 없습니다. \n주소창의 새로고침 버튼을 눌러보세요.");
+  <p id="status" style="margin-top:20px"></p>
+
+  <script>
+    const status = document.getElementById("status");
+    const btn = document.getElementById("payBtn");
+
+    if (!window.Pi) {
+      status.innerText = "❌ Pi Browser에서만 결제 가능";
+      btn.disabled = true;
+    } else {
+      Pi.init({ version: "2.0", sandbox: true });
+    }
+
+    btn.onclick = async () => {
+      status.innerText = "결제창 여는 중...";
+
+      try {
+        await Pi.createPayment(
+          {
+            amount: 0.1,
+            memo: "BIOTEM 테스트 결제",
+            metadata: { product: "abutment_sample" }
+          },
+          {
+            onReadyForServerApproval: (paymentId) => {
+              status.innerText = "지갑 승인 대기중 (" + paymentId + ")";
+            },
+            onReadyForServerCompletion: (paymentId, txid) => {
+              status.innerText = "✅ 결제 성공";
+            },
+            onCancel: () => {
+              status.innerText = "❌ 결제 취소";
+            },
+            onError: (err) => {
+              status.innerText = "❌ 에러: " + err.message;
             }
-        };
-    </script>
+          }
+        );
+      } catch (e) {
+        status.innerText = "❌ 결제창 호출 실패";
+        console.error(e);
+      }
+    };
+  </script>
 </body>
 </html>
