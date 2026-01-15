@@ -5,19 +5,14 @@
   <title>BIOTEM</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- Pi SDK -->
+  <!-- Pi SDK (Pi Browser 전용) -->
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-  <script>
-    Pi.init({ version: "2.0", sandbox: true });
-  </script>
 
   <style>
     body {
       font-family: Arial, Helvetica, sans-serif;
-      margin: 0;
       padding: 40px;
       background: #ffffff;
-      color: #000;
     }
 
     h1 {
@@ -26,88 +21,102 @@
     }
 
     p {
-      margin-bottom: 24px;
-      color: #444;
+      margin-top: 0;
+      margin-bottom: 20px;
+      color: #555;
     }
 
     button {
-      display: block;
-      width: 240px;
-      padding: 12px;
-      margin-bottom: 12px;
+      padding: 14px 20px;
       font-size: 16px;
+      margin-right: 10px;
       cursor: pointer;
-      border: 1px solid #333;
-      background: #f5f5f5;
     }
 
-    button:hover {
-      background: #eaeaea;
-    }
-
-    #status {
-      margin-top: 20px;
+    #log {
+      margin-top: 30px;
+      padding: 12px;
+      border: 1px solid #ccc;
+      background: #f9f9f9;
+      white-space: pre-wrap;
       font-size: 14px;
-      color: #0066cc;
     }
   </style>
 </head>
-
 <body>
+
   <h1>BIOTEM</h1>
   <p>Official implant product website</p>
 
   <button onclick="piLogin()">Pi 로그인</button>
-  <button onclick="testPayment()">테스트 결제 (0.01 Pi)</button>
+  <button onclick="testPay()">테스트 결제 (0.01 Pi)</button>
 
-  <div id="status"></div>
+  <div id="log">초기화 중...</div>
 
   <script>
-    let currentUser = null;
+    const logBox = document.getElementById("log");
 
+    function log(msg) {
+      logBox.innerText += "\n" + msg;
+    }
+
+    // Pi SDK 로드 확인
+    if (typeof Pi === "undefined") {
+      logBox.innerText =
+        "❌ Pi SDK가 로드되지 않았습니다.\n" +
+        "👉 Pi Browser가 아닌 일반 브라우저입니다.";
+    } else {
+      logBox.innerText = "✅ Pi SDK 로드됨 (Pi Browser)";
+    }
+
+    // Pi 초기화 (Testnet)
+    Pi.init({
+      version: "2.0",
+      sandbox: true
+    });
+
+    // 로그인
     async function piLogin() {
+      log("▶ Pi 로그인 시도 중...");
+
       try {
-        const scopes = ['username', 'payments'];
-        const authResult = await Pi.authenticate(scopes, onIncompletePayment);
+        const auth = await Pi.authenticate(
+          ["username", "payments"],
+          function (payment) {
+            log("결제 승인 콜백: " + JSON.stringify(payment));
+          }
+        );
 
-        currentUser = authResult.user;
-        document.getElementById("status").innerText =
-          "로그인 성공: " + currentUser.username;
+        log("✅ 로그인 성공");
+        log("username: " + auth.user.username);
+        log("uid: " + auth.user.uid);
 
-        console.log("Pi 로그인 성공:", authResult);
       } catch (err) {
-        console.error("로그인 실패:", err);
-        alert("Pi 로그인 실패");
+        log("❌ 로그인 실패");
+        log(JSON.stringify(err));
       }
     }
 
-    function onIncompletePayment(payment) {
-      console.log("미완료 결제 감지:", payment);
-    }
-
-    async function testPayment() {
-      if (!currentUser) {
-        alert("먼저 Pi 로그인을 해주세요.");
-        return;
-      }
+    // 테스트 결제
+    async function testPay() {
+      log("▶ 테스트 결제 시작");
 
       try {
         const payment = await Pi.createPayment({
           amount: 0.01,
           memo: "BIOTEM test payment",
-          metadata: {
-            product: "biotem-test"
-          }
+          metadata: { product: "test" }
         });
 
-        console.log("결제 생성:", payment);
-        document.getElementById("status").innerText =
-          "결제 요청 완료 (승인 대기)";
+        log("✅ 결제 생성됨");
+        log(JSON.stringify(payment));
+
       } catch (err) {
-        console.error("결제 실패:", err);
-        alert("결제 실패");
+        log("❌ 결제 실패");
+        log(JSON.stringify(err));
       }
     }
   </script>
+
 </body>
 </html>
