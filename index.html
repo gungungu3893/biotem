@@ -1,42 +1,52 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <title>Pi SDK CHECK</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BIOTEM · Pi 로그인</title>
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 </head>
-<body>
-  <h2>Pi SDK 상태 체크</h2>
+<body style="font-family:sans-serif;text-align:center;padding:40px">
 
-  <button onclick="check()">SDK 확인</button>
-  <pre id="out"></pre>
+  <h1>BIOTEM</h1>
+  <p>Pi 지갑 로그인</p>
+
+  <button id="loginBtn" style="padding:15px 30px;font-size:18px">
+    Pi 로그인
+  </button>
+
+  <p id="status" style="margin-top:20px;font-weight:bold"></p>
 
   <script>
-    const out = document.getElementById("out");
+    const status = document.getElementById("status");
+    const btn = document.getElementById("loginBtn");
 
-    function log(msg) {
-      out.textContent += msg + "\n";
+    if (!window.Pi) {
+      status.innerText = "❌ Pi Browser에서 열어주세요";
+      btn.disabled = true;
+    } else {
+      Pi.init({ version: "2.0", sandbox: true });
     }
 
-    function check() {
-      if (!window.Pi) {
-        log("❌ Pi 객체 없음 (SDK 로드 실패)");
-        return;
-      }
-
-      log("✅ Pi SDK 로드됨");
-
+    btn.onclick = async () => {
+      status.innerText = "로그인 중...";
       try {
-        Pi.init({ version: "2.0", sandbox: true });
-        log("✅ Pi.init 성공");
+        const auth = await Pi.authenticate(
+          ["username", "payments"],
+          () => {}
+        );
+        status.innerText = "✅ 로그인 성공: " + auth.user.username;
 
-        Pi.authenticate(["username"], () => {})
-          .then(res => log("✅ 로그인 성공: " + res.user.username))
-          .catch(err => log("❌ 로그인 실패: " + err.message));
+        // 로그인 성공 → 결제 페이지 이동
+        setTimeout(() => {
+          window.location.href = "products.html";
+        }, 800);
+
       } catch (e) {
-        log("❌ 예외 발생: " + e.message);
+        status.innerText = "❌ 로그인 실패";
+        console.error(e);
       }
-    }
+    };
   </script>
 </body>
 </html>
