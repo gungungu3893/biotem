@@ -10,35 +10,29 @@
 
   <style>
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f5f5f5;
-      padding: 20px;
+      font-family: sans-serif;
+      background: #f4f4f4;
+      padding: 30px;
       text-align: center;
     }
     .card {
       background: #fff;
+      padding: 25px;
+      border-radius: 12px;
       max-width: 360px;
-      margin: 40px auto;
-      padding: 30px;
-      border-radius: 16px;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.1);
-    }
-    h1 { margin-bottom: 10px; }
-    .price {
-      font-size: 22px;
-      font-weight: bold;
-      color: #d35400;
-      margin: 20px 0;
+      margin: auto;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
     button {
       width: 100%;
-      padding: 16px;
-      font-size: 18px;
-      border: none;
-      border-radius: 10px;
-      background: #f1c40f;
+      padding: 15px;
+      font-size: 16px;
       font-weight: bold;
+      background: #ffd700;
+      border: none;
+      border-radius: 8px;
       cursor: pointer;
+      margin-top: 15px;
     }
     #status {
       margin-top: 20px;
@@ -47,89 +41,73 @@
     }
   </style>
 </head>
-
 <body>
-  <div class="card">
-    <h1>BIOTEM 테스트 결제</h1>
-    <p>임플란트 지주대 샘플</p>
-    <div class="price">0.1 Test-Pi</div>
-    <button id="payBtn">결제하기</button>
-    <div id="status">대기 중</div>
-  </div>
 
-  <script>
-    /* ==========================
-       1. Pi SDK 초기화
-       ========================== */
-    Pi.init({
-      version: "2.0",
-      sandbox: false
-    });
+<div class="card">
+  <h2>BIOTEM 테스트 결제</h2>
+  <p>임플란트 지주대 샘플</p>
+  <p style="color:#e44d26;font-weight:bold;">0.1 Test-Pi</p>
 
-    const statusEl = document.getElementById("status");
-    const payBtn = document.getElementById("payBtn");
+  <button id="payBtn">결제하기</button>
+  <div id="status">대기 중</div>
+</div>
 
-    /* ==========================
-       2. 결제 버튼
-       ========================== */
-    payBtn.onclick = async () => {
-      statusEl.innerText = "결제 요청 중...";
+<script>
+  // ✅ 반드시 sandbox false (실제 Pi Browser)
+  Pi.init({ version: "2.0", sandbox: false });
 
-      try {
-        await Pi.createPayment(
-          {
-            amount: 0.1,
-            memo: "BIOTEM 테스트 결제",
-            metadata: { product: "abutment-sample" }
+  const SERVER_URL = "https://biotem-pi-server.onrender.com";
+  const statusEl = document.getElementById("status");
+
+  document.getElementById("payBtn").onclick = async () => {
+    statusEl.innerText = "결제 요청 중...";
+
+    try {
+      await Pi.createPayment(
+        {
+          amount: 0.1,
+          memo: "BIOTEM 테스트 결제",
+          metadata: { product: "abutment_sample" }
+        },
+        {
+          // 🔑 1️⃣ 서버 승인
+          onReadyForServerApproval: async (paymentId) => {
+            statusEl.innerText = "서버 승인 요청 중...";
+
+            await fetch(`${SERVER_URL}/approve`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ paymentId })
+            });
           },
-          {
-            /* === 핵심 ===
-               Render 서버로 승인 요청 */
-            onReadyForServerApproval: async (paymentId) => {
-              statusEl.innerText = "서버 승인 요청 중...";
 
-              await fetch(
-                "https://biotem-pi-server.onrender.com/approve",
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ paymentId })
-                }
-              );
-            },
+          // 🔑 2️⃣ 서버 완료
+          onReadyForServerCompletion: async (paymentId, txid) => {
+            statusEl.innerText = "결제 완료 처리 중...";
 
-            onReadyForServerCompletion: async (paymentId, txid) => {
-              statusEl.innerText = "결제 완료 처리 중...";
+            await fetch(`${SERVER_URL}/complete`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ paymentId, txid })
+            });
 
-              await fetch(
-                "https://biotem-pi-server.onrender.com/complete",
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ paymentId, txid })
-                }
-              );
+            statusEl.innerText = "✅ 결제 성공!";
+          },
 
-              statusEl.innerText = "✅ 결제 성공";
-            },
+          onCancel: () => {
+            statusEl.innerText = "❌ 결제 취소됨";
+          },
 
-            onCancel: () => {
-              statusEl.innerText = "❌ 결제 취소됨";
-            },
-
-            onError: (err) => {
-              statusEl.innerText = "에러: " + err.message;
-            }
+          onError: (err) => {
+            statusEl.innerText = "에러 발생: " + err.message;
           }
-        );
-      } catch (e) {
-        alert(
-          "⚠️ Pi Browser 주소창의 노란 느낌표 때문에 결제가 차단되었습니다.\n\n" +
-          "우측 상단 새로고침 아이콘을 눌러주세요."
-        );
-        statusEl.innerText = "보안 경고로 결제 실패";
-      }
-    };
-  </script>
+        }
+      );
+    } catch (e) {
+      alert("Pi Browser에서 다시 시도하세요.\n주소창 새로고침 필요할 수 있습니다.");
+    }
+  };
+</script>
+
 </body>
 </html>
